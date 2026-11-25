@@ -1,0 +1,12 @@
+html, body { margin:0; height:100%; overflow:hidden; background:#111; touch-action:none;
+  -webkit-user-select:none; user-select:none; font-family:system-ui,sans-serif; }
+canvas { display:block; width:100vw; height:100vh; }
+#ui { position:fixed; top:max(10px, env(safe-area-inset-top)); left:10px; right:10px;
+  display:flex; gap:10px; align-items:center; pointer-events:none; }
+#ui > * { pointer-events:auto; }
+button { padding:12px 16px; font-size:16px; border:0; border-radius:10px; background:#4fc3f7; color:#04212e; }
+#invert, #reset { background:#333; color:#ddd; }
+#invert { margin-left:auto; }
+#reset { margin-left:auto; }
+#invert:not([hidden]) + #reset { margin-left:0; }
+#status { margin:0; color:#aaa; font-size:14px; }

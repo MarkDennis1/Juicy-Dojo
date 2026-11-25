@@ -462,7 +462,7 @@ function scoreTable(highlight: ScoreEntry | null = null) {
 }
 
 function showMenu() {
-  showOverlay(`<h1>Wobble</h1><p>Swipe to slice. Avoid the bombs.</p><p>Best: ${bestScore(settings)}</p>
+  showOverlay(`<h1>Juicy Dojo</h1><p>Swipe to slice. Avoid the bombs.</p><p>Best: ${bestScore(settings)}</p>
     ${scoreTable()}<div class="btns"><button data-act="play">Play</button></div>`);
 }
 function showPause() {
@@ -481,9 +481,9 @@ function showGameOver() {
 }
 
 async function shareScore(btn: HTMLButtonElement) {
-  const text = `I scored ${g.score} and reached level ${g.level} in Wobble!`;
+  const text = `I scored ${g.score} and reached level ${g.level} in Juicy Dojo!`;
   try {
-    if (navigator.share) { await navigator.share({ title: 'Wobble', text, url: location.href }); return; }
+    if (navigator.share) { await navigator.share({ title: 'Juicy Dojo', text, url: location.href }); return; }
     await navigator.clipboard.writeText(`${text} ${location.href}`);
     btn.textContent = 'Copied!';
   } catch { /* share sheet dismissed or clipboard blocked */ }

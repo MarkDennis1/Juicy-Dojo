@@ -1,6 +1,6 @@
-# Wobble: Roadmap
+# Juicy Dojo: Roadmap
 
-Wobble is a slicing game: targets drift around the screen and you swipe across them to cut them in two, with juice and sound. Today it is a toy. It has no score, no way to lose and no variety. This plan turns it into a game people replay.
+Juicy Dojo is a slicing game: targets drift around the screen and you swipe across them to cut them in two, with juice and sound. Today it is a toy. It has no score, no way to lose and no variety. This plan turns it into a game people replay.
 
 ## Where we are
 

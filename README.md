@@ -2,6 +2,8 @@
 
 > *I miss playing Fruit Ninja, so I made my own.* 🥷
 
+### 👉 [Play it here!](https://juicy-dojo.markdennissanchez1.workers.dev/) 🍉
+
 Juicy Dojo is a small slicing game that runs in the browser. 🍎 Targets fly up from the bottom of the screen, and you swipe across them to slice them in two, with a spray of juice 💦 and satisfying sound effects. It's an installable, offline-capable PWA, so you can add it to your phone's home screen 📱 and play anywhere.
 
 ## 🎮 How it works

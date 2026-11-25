@@ -5,6 +5,8 @@ let noise: AudioBuffer | null = null;
 let muted = false;
 let volume = 0.9;
 let lastSwoosh = 0, lastSlice = 0;
+let paused = false;
+let musicBus: GainNode | null = null;
 
 /** Create/resume the audio context. Must be called from a user gesture (iOS requirement). */
 export function unlockAudio(): void {
@@ -19,11 +21,14 @@ export function unlockAudio(): void {
     master = ctx.createGain();
     master.gain.value = muted ? 0 : volume;
     master.connect(comp).connect(ctx.destination);
+    musicBus = ctx.createGain();
+    musicBus.gain.value = 0.45; // music sits under the effects
+    musicBus.connect(master);
     noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
-  if (ctx.state !== 'running') void ctx.resume(); // also recovers iOS's 'interrupted' state
+  if (ctx.state !== 'running' && !paused) void ctx.resume(); // also recovers iOS's 'interrupted' state
   // Playing a (silent) buffer inside the gesture is what fully unlocks iOS audio.
   const src = ctx.createBufferSource();
   src.buffer = ctx.createBuffer(1, 1, 22050);
@@ -34,9 +39,9 @@ export function unlockAudio(): void {
 // iOS only accepts an unlock from touchend/click, not touchstart/pointerdown, so listen for all of them.
 // They stay attached: iOS suspends the context when the page is backgrounded and each gesture revives it.
 for (const ev of ['touchend', 'pointerup', 'click', 'keydown'] as const) {
-  addEventListener(ev, () => { if (!ctx || ctx.state !== 'running') unlockAudio(); }, { passive: true });
+  addEventListener(ev, () => { if (!paused && (!ctx || ctx.state !== 'running')) unlockAudio(); }, { passive: true });
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx) void ctx.resume(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx && !paused) void ctx.resume(); });
 
 function applyGain() {
   if (master && ctx) master.gain.setTargetAtTime(muted ? 0 : volume, ctx.currentTime, 0.02);
@@ -93,12 +98,12 @@ export function swoosh(speed: number): void {
 }
 
 /** Wet, juicy slice. */
-export function slice(): void {
+export function slice(pitch = 1): void {
   if (!ctx || (muted || volume === 0) || ctx.state !== 'running') return;
   const now = performance.now();
-  if (now - lastSlice < 35) return; // several balls in one swipe: don't pile up
+  if (now - lastSlice < 35) return; // several targets in one swipe: don't pile up
   lastSlice = now;
-  const t = ctx.currentTime, k = 0.85 + Math.random() * 0.3;
+  const t = ctx.currentTime, k = (0.85 + Math.random() * 0.3) * pitch;
   noiseBurst(t, 0.1, 3200 * k, 600, 0.9, 0.5);                        // sharp cut
   tone(t, 0.14, 190 * k, 65 * k, 0.45, 'triangle');                   // meaty thump
   noiseBurst(t + 0.03, 0.2, 350 * k, 1300 * k, 5, 0.3, 0.02);         // squelchy squirt
@@ -108,3 +113,97 @@ export function slice(): void {
     tone(t + dt, 0.05, (900 + Math.random() * 700) * k, 350, 0.07 + Math.random() * 0.05);
   }
 }
+
+const audible = () => !!ctx && !muted && volume > 0 && ctx.state === 'running';
+
+/** Bomb going off: low boom plus a sharp crack. */
+export function bomb(): void {
+  if (!audible() || !ctx) return;
+  const t = ctx.currentTime;
+  noiseBurst(t, 0.9, 2200, 50, 0.7, 0.9, 0.005, 'lowpass');
+  noiseBurst(t, 0.25, 6000, 900, 0.8, 0.5);
+  tone(t, 0.7, 130, 28, 0.9, 'sawtooth');
+}
+
+/** Rising arpeggio: the bigger the combo, the higher and longer it goes. */
+export function combo(n: number): void {
+  if (!audible() || !ctx) return;
+  const t = ctx.currentTime, base = 440 * Math.pow(2, Math.min(n - 2, 8) / 6);
+  const steps = [0, 4, 7, 12, 16, 19];
+  for (let i = 0; i < Math.min(n, steps.length); i++) {
+    tone(t + i * 0.06, 0.16, base * Math.pow(2, steps[i] / 12), base * Math.pow(2, steps[i] / 12) * 1.01, 0.16, 'triangle');
+  }
+}
+
+/** A target fell out of the screen. */
+export function miss(): void {
+  if (!audible() || !ctx) return;
+  tone(ctx.currentTime, 0.28, 240, 80, 0.35, 'triangle');
+}
+
+export function levelUp(): void {
+  if (!audible() || !ctx) return;
+  const t = ctx.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => tone(t + i * 0.09, 0.22, f, f, 0.18, 'triangle'));
+}
+
+// --- Background music: one looping track per level, crossfaded at level-up ---
+// Tracks are fetched and decoded lazily (this level and the next), and the service worker caches
+// them as they are fetched, so offline play works after one full run.
+const FADE = 1; // seconds
+type Playing = { src: AudioBufferSourceNode; gain: GainNode };
+const tracks = new Map<number, Promise<AudioBuffer | null>>();
+let current: Playing | null = null;
+let musicToken = 0;
+
+function loadTrack(level: number): Promise<AudioBuffer | null> {
+  if (!ctx) return Promise.resolve(null);
+  let p = tracks.get(level);
+  if (!p) {
+    const c = ctx;
+    p = fetch(`${import.meta.env.BASE_URL}music/level_${level}.m4a`)
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })
+      .then(b => c.decodeAudioData(b))
+      .catch(() => { tracks.delete(level); return null; });
+    tracks.set(level, p);
+  }
+  return p;
+}
+
+function fadeOut(p: Playing, seconds: number) {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  p.gain.gain.cancelScheduledValues(t);
+  p.gain.gain.setValueAtTime(p.gain.gain.value, t);
+  p.gain.gain.linearRampToValueAtTime(0, t + seconds);
+  p.src.stop(t + seconds + 0.05);
+}
+
+/** Crossfade to the track for `level`. Call after the first user gesture. */
+export async function playMusic(level: number): Promise<void> {
+  const token = ++musicToken;
+  const buf = await loadTrack(level);
+  if (!buf || token !== musicToken || !ctx || !musicBus) return;
+  const t = ctx.currentTime;
+  if (current) fadeOut(current, FADE);
+  const src = ctx.createBufferSource(), gain = ctx.createGain();
+  src.buffer = buf;
+  src.loop = true; // the short tracks (5, 6) and the endless level 9 loop; long ones are cut by the next crossfade
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(1, t + FADE);
+  src.connect(gain).connect(musicBus);
+  src.start(t);
+  current = { src, gain };
+  for (const k of [...tracks.keys()]) if (k !== level) tracks.delete(k); // free the decoded old track
+  if (level < 9) void loadTrack(level + 1);                                // warm up the next one
+}
+
+export function stopMusic(seconds = 1.5): void {
+  musicToken++;
+  if (current) fadeOut(current, seconds);
+  current = null;
+}
+
+/** Freeze everything (music included) while the game is paused. */
+export function suspendAudio(): void { paused = true; void ctx?.suspend(); }
+export function resumeAudio(): void { paused = false; void ctx?.resume(); }

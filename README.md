@@ -1,28 +1,27 @@
 # Wobble
 
-Wobble is a small tilt-controlled physics toy that runs in the browser. A ball rolls and bounces around the screen, and gravity follows how you tilt your phone. On a desktop, moving the pointer tilts it instead. It's an installable, offline-capable PWA.
+Wobble is a small slicing game that runs in the browser. Balls drift and bounce around the screen like targets, and you swipe across them to slice them in two, with a spray of juice and sound effects. It's an installable, offline-capable PWA.
 
 ## How it works
 
-- **Physics:** [Matter.js](https://brm.io/matter-js/) simulates the balls. Four static walls surround the viewport, and the balls bounce off them and each other.
-- **Tilt input:** the `devicemotion` sensor drives gravity. Android and iOS report acceleration with opposite signs, and the code corrects for that and for screen rotation ([src/sensor.ts](src/sensor.ts)).
-- **Pointer fallback:** with no motion sensor, moving the pointer across the screen tilts gravity toward it.
+- **Physics:** [Matter.js](https://brm.io/matter-js/) moves the balls. Four static walls surround the viewport. There is no gravity: each ball keeps its own constant speed, bounces off the walls, and passes through other balls like a target.
 - **Rendering:** a plain 2D canvas, scaled for high-DPI screens.
-- **Persistence:** ball count, best count and the "flip tilt" setting are saved in `localStorage` ([src/settings.ts](src/settings.ts)).
+- **Sound:** effects are synthesised with the Web Audio API in [src/audio.ts](src/audio.ts), so there are no audio files to load. Audio starts on your first touch or click, as browsers require.
+- **Persistence:** ball count, best count and the sound setting are saved in `localStorage` ([src/settings.ts](src/settings.ts)).
 - **PWA:** a web manifest and a network-first service worker ([public/sw.js](public/sw.js)) let it install to a home screen and work offline.
 
 ## Controls
 
 | Action | Result |
 | --- | --- |
-| **Enable gravity** button | Requests motion-sensor permission (required on iOS) and starts tilt control |
-| Tilt the device | Changes the direction of gravity |
+| Swipe across balls | Slices them in two, with a spray of red juice |
+| Swipe quickly | Plays a blade "whoosh" |
+| Speaker icon | Mutes or unmutes all sound |
+| Volume slider | Adjusts the sound volume (both settings are remembered) |
 | Tap / click the screen | Drops another ball at that spot (up to 60) |
-| Move the pointer | Tilts gravity when no sensor is available |
-| **Flip tilt** | Inverts the tilt direction (appears once a sensor is active) |
 | **Reset** | Goes back to a single ball |
 
-The bottom-left corner shows the current ball count and your best count.
+The bottom-left corner shows the current ball count, your best count and how many balls you've sliced. If you slice the last ball, a new one drops in after a moment.
 
 ## Getting started
 
@@ -39,10 +38,8 @@ npm run preview   # serve the production build
 
 1. Install [Node.js](https://nodejs.org/) (a current LTS version).
 2. In the project folder, run `npm install`, then `npm run dev`.
-3. Open the URL Vite prints, usually `http://localhost:5173`. Move the mouse to tilt the ball and click to add more balls.
-4. To try it on a phone on the same Wi-Fi, open the "Network" URL Vite prints (for example `http://192.168.x.x:5173`). Tilt control won't work there, because phone sensors need HTTPS. The pointer fallback still works.
-
-Phone motion sensors only work over **HTTPS**. To try it on a device, deploy the build or serve the dev server over a secure tunnel.
+3. Open the URL Vite prints, usually `http://localhost:5173`. Drag across a ball to slice it, and click empty space to add more.
+4. To try it on a phone on the same Wi-Fi, open the "Network" URL Vite prints (for example `http://192.168.x.x:5173`). 
 
 ## Deployment
 
@@ -53,7 +50,7 @@ The build uses a relative base (`./`), so the contents of `dist/` can be hosted 
 ```
 index.html            App shell and UI buttons
 src/main.ts           Physics world, rendering, input handling
-src/sensor.ts         Device motion -> gravity conversion
+src/audio.ts          Synthesised sound effects
 src/settings.ts       localStorage-backed settings
 src/style.css         Styles
 public/               Manifest, service worker, icon

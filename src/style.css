@@ -5,8 +5,8 @@ canvas { display:block; width:100vw; height:100vh; }
   display:flex; gap:10px; align-items:center; pointer-events:none; }
 #ui > * { pointer-events:auto; }
 button { padding:12px 16px; font-size:16px; border:0; border-radius:10px; background:#4fc3f7; color:#04212e; }
-#invert, #reset { background:#333; color:#ddd; }
-#invert { margin-left:auto; }
-#reset { margin-left:auto; }
-#invert:not([hidden]) + #reset { margin-left:0; }
-#status { margin:0; color:#aaa; font-size:14px; }
+#reset, #mute { background:#333; color:#ddd; }
+#sound { margin-left:auto; display:flex; align-items:center; gap:8px; }
+#mute { display:grid; place-items:center; width:44px; height:44px; padding:0; }
+#mute svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+#volume { width:90px; accent-color:#4fc3f7; }

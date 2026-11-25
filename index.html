@@ -12,9 +12,10 @@
 <body>
 <canvas id="c"></canvas>
 <div id="ui">
-  <button id="start">Enable gravity</button>
-  <p id="status" role="status"></p>
-  <button id="invert" hidden>Flip tilt</button>
+  <div id="sound">
+    <input id="volume" type="range" min="0" max="100" step="1" aria-label="Volume">
+    <button id="mute" aria-label="Mute"></button>
+  </div>
   <button id="reset">Reset</button>
 </div>
 <script type="module" src="/src/main.ts"></script>

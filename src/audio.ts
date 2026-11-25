@@ -141,10 +141,23 @@ export function miss(): void {
   tone(ctx.currentTime, 0.28, 240, 80, 0.35, 'triangle');
 }
 
-export function levelUp(): void {
+/** Celebratory fanfare: rising major arpeggio, a held chord, and sparkles. Each level is a semitone higher. */
+export function levelUp(level = 2): void {
   if (!audible() || !ctx) return;
-  const t = ctx.currentTime;
-  [523, 659, 784, 1047].forEach((f, i) => tone(t + i * 0.09, 0.22, f, f, 0.18, 'triangle'));
+  const t = ctx.currentTime, k = Math.pow(2, Math.min(level - 2, 7) / 12);
+  const hz = (semi: number) => 523.25 * k * Math.pow(2, semi / 12); // C5 major
+  [0, 4, 7, 12].forEach((s, i) => {                                  // quick run up
+    tone(t + i * 0.08, 0.2, hz(s), hz(s), 0.18, 'triangle');
+    tone(t + i * 0.08, 0.2, hz(s) * 2, hz(s) * 2, 0.05, 'sine');
+  });
+  const hold = t + 0.34;                                             // held final chord
+  [12, 16, 19, 24].forEach(s => tone(hold, 0.7, hz(s), hz(s) * 1.003, 0.13, 'triangle'));
+  tone(hold, 0.5, hz(0) / 2, hz(0) / 2, 0.2, 'sine');                // bass
+  noiseBurst(hold, 0.5, 9000, 5000, 0.6, 0.06, 0.01, 'highpass');    // shimmer
+  for (let i = 0; i < 6; i++) {                                      // sparkles
+    const f = hz(24 + [0, 4, 7, 12][i % 4]) * 1.5;
+    tone(hold + 0.05 + i * 0.07, 0.12, f, f * 1.02, 0.06, 'sine');
+  }
 }
 
 // --- Background music: one looping track per level, crossfaded at level-up ---

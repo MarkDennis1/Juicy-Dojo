@@ -78,7 +78,7 @@ function beginLevel(level: number) {
   g.phase = 'banner';
   g.bannerSteps = BANNER_STEPS;
   g.waveLeft = 0; g.waveCd = 0;
-  if (level > 1) { g.lives = Math.min(MAX_LIVES, g.lives + 1); audio.levelUp(); }
+  if (level > 1) { g.lives = Math.min(MAX_LIVES, g.lives + 1); audio.levelUp(level); }
   showBanner(isEndless(level) ? `Level ${level}\nEndless` : `Level ${level}`);
   void audio.playMusic(level);
   syncHud();

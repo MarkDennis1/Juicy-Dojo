@@ -12,12 +12,20 @@
 <body>
 <canvas id="c"></canvas>
 <div id="ui">
+  <button id="pause" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
+  <div id="stats">
+    <div id="hearts" aria-label="Lives"></div>
+    <div id="score">0</div>
+    <div id="lvl"></div>
+  </div>
   <div id="sound">
     <input id="volume" type="range" min="0" max="100" step="1" aria-label="Volume">
     <button id="mute" aria-label="Mute"></button>
   </div>
-  <button id="reset">Reset</button>
 </div>
+<div id="banner" aria-live="polite"></div>
+<div id="overlay" hidden></div>
+<div id="fps" hidden></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

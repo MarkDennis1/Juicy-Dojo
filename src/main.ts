@@ -32,6 +32,15 @@ const FRUITS: Kind[] = [
 const GOLD: Kind = { name: 'gold', r: 23, color: '#ffc61a', inner: '#fff2a8', juice: ['#ffd23f', '#e0a800'], points: 5, pitch: 1.7 };
 const BOMB: Kind = { name: 'bomb', r: 28, color: '#1a1a1a', inner: '#ff6a00', juice: ['#ff6a00', '#333'], points: 0, pitch: 1 };
 
+// The radii above are tuned for a ~420px-wide phone. `r` is rescaled on resize so targets keep
+// the same proportion of the screen (smaller side) on any display.
+const BASE_R = new Map([...FRUITS, GOLD, BOMB].map(k => [k, k.r] as const));
+const REF_SIZE = 420, MIN_SCALE = 0.75, MAX_SCALE = 2.2;
+function scaleKinds() {
+  const s = Math.min(Math.max(Math.min(W, H) / REF_SIZE, MIN_SCALE), MAX_SCALE);
+  for (const [k, r] of BASE_R) k.r = r * s;
+}
+
 interface Target { kind: Kind; x: number; y: number; px: number; py: number; vx: number; vy: number; ang: number; spin: number }
 let targets: Target[] = [];
 
@@ -358,7 +367,7 @@ function drawTarget(t: Target, x: number, y: number, now: number) {
     ctx.strokeStyle = '#999'; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(r * 0.3, -r * 1.4, r * 0.6, -r * 1.35); ctx.stroke();
     ctx.fillStyle = now % 160 < 80 ? '#ffd23f' : '#ff6a00'; // flickering spark
-    ctx.beginPath(); ctx.arc(r * 0.6, -r * 1.35, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.6, -r * 1.35, r * 0.17, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#e33'; ctx.lineWidth = 2; // warning ring so bombs read at a glance
     ctx.beginPath(); ctx.arc(0, 0, r + 3, 0, Math.PI * 2); ctx.stroke();
   } else {
@@ -565,6 +574,7 @@ canvas.addEventListener('pointercancel', endBlade);
 function resize() {
   dpr = Math.min(window.devicePixelRatio || 1, 2); // cap for phone frame rate
   W = innerWidth; H = innerHeight;
+  scaleKinds();
   canvas.width = W * dpr; canvas.height = H * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   stain.width = W * dpr; stain.height = H * dpr; // stains are lost on resize, which is fine
